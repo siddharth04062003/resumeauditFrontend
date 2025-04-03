@@ -26,6 +26,9 @@ body {
   position: relative;
   overflow-x: hidden; /* Prevent horizontal scrolling */
   overflow-y: auto; /* Allow vertical scrolling */
+  display: flex;
+  justify-content: center; /* Center horizontally */
+  align-items: center; /* Center vertically */
 }
 
 /* Scrollbar styling */
