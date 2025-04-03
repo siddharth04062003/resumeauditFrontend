@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import './ResumeScreener.css'; // We'll create this CSS file
+import './ResumeScreener.css'; // Ensure you have this CSS file
 
 const App = () => {
   const [resumeFile, setResumeFile] = useState(null);
   const [jobDescriptionText, setJobDescriptionText] = useState('');
-  const [score, setScore] = useState(null);
+  const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [fileName, setFileName] = useState('');
   const [dragActive, setDragActive] = useState(false);
 
-  // Handle resume file upload
+  // Handle file upload
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -28,12 +28,7 @@ const App = () => {
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
+    setDragActive(e.type === "dragenter" || e.type === "dragover");
   };
 
   // Handle drop event
@@ -41,7 +36,7 @@ const App = () => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
       if (file.type === "application/pdf" || file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
@@ -55,26 +50,24 @@ const App = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!resumeFile || !jobDescriptionText.trim()) return;
-    
+
     setLoading(true);
     setError(null);
-    setScore(null);
+    setResult(null);
 
-    // Create FormData to send the resume file and JD
     const formData = new FormData();
     formData.append('resume', resumeFile);
     formData.append('jobDescription', jobDescriptionText);
 
     try {
-      // Send POST request to backend API
       const response = await fetch('https://resumeaudit-backend-wkep.vercel.app/api/resumes/process', {
         method: 'POST',
         body: formData,
       });
 
       if (response.ok) {
-        const { score } = await response.json();
-        setScore(score);
+        const data = await response.json();
+        setResult(data);
       } else {
         throw new Error('Failed to process the resume');
       }
@@ -88,7 +81,7 @@ const App = () => {
   return (
     <div className="app-container">
       <div className="header">
-        <h1>AI-Based Resume Screening Tool</h1>
+        <h1>AI-Based Resume Analyzing Tool</h1>
         <p>Upload your resume and job description to get an AI-powered match score</p>
       </div>
 
@@ -104,16 +97,10 @@ const App = () => {
               onDrop={handleDrop}
             >
               <div className="upload-icon">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path>
-                  <polyline points="17 8 12 3 7 8"></polyline>
-                  <line x1="12" y1="3" x2="12" y2="15"></line>
-                </svg>
+                📄
               </div>
               <p>
-                <label htmlFor="resume" className="file-label">
-                  Upload a file
-                </label> 
+                <label htmlFor="resume" className="file-label">Upload a file</label> 
                 or drag and drop
               </p>
               <input
@@ -124,12 +111,8 @@ const App = () => {
                 onChange={handleFileChange}
                 required
               />
-              <p className="file-types">PDF or DOCX up to 10MB</p>
-              {fileName && (
-                <p className="selected-file">
-                  Selected: {fileName}
-                </p>
-              )}
+              <p className="file-types">PDF or DOCX up to 1MB</p>
+              {fileName && <p className="selected-file">Selected: {fileName}</p>}
             </div>
           </div>
 
@@ -147,59 +130,52 @@ const App = () => {
           </div>
 
           <div className="form-group">
-            <button
-              type="submit"
-              disabled={loading}
-              className={loading ? 'btn-loading' : 'btn-primary'}
-            >
-              {loading ? (
-                <>
-                  <span className="spinner"></span>
-                  Processing...
-                </>
-              ) : (
-                'Analyze Resume Match'
-              )}
+            <button type="submit" disabled={loading} className={loading ? 'btn-loading' : 'btn-primary'}>
+              {loading ? <>⏳ Processing...</> : 'Analyze Resume Match'}
             </button>
           </div>
         </form>
 
         {error && (
           <div className="error-message">
-            <div className="error-icon">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div>
-              <h3>Error</h3>
-              <p>{error}</p>
-            </div>
+            ❌ Error: {error}
           </div>
         )}
 
-        {score !== null && (
+        {result && (
           <div className="results-card">
             <h3>Resume Match Analysis</h3>
             <div className="score-container">
               <div className="score-header">
                 <span className="score-label">Match Score</span>
-                <span className="score-value">{score}%</span>
+                <span className="score-value">{result.score}%</span>
               </div>
               <div className="progress-bar-container">
                 <div 
-                  className={`progress-bar ${score >= 70 ? 'high-score' : score >= 40 ? 'medium-score' : 'low-score'}`}
-                  style={{ width: `${score}%` }}
+                  className={`progress-bar ${result.score >= 70 ? 'high-score' : result.score >= 40 ? 'medium-score' : 'low-score'}`}
+                  style={{ width: `${result.score}%` }}
                 ></div>
               </div>
             </div>
             <p className="score-description">
-              {score >= 70 
-                ? "Strong match! This candidate's resume aligns well with the job requirements."
-                : score >= 40 
-                ? "Moderate match. The candidate meets some of the job requirements."
-                : "Low match. This candidate's profile may not align with the job requirements."}
+              {result.score >= 90 
+                ? "✅ Strong match! Your resume aligns well with the job description."
+                : result.score >= 70 
+                ? "⚡ Good match, but could be improved."
+                : "🔴 Low match. Consider tailoring your resume."}
             </p>
+
+            {/* Show missing keywords if score is below 90 */}
+            {result.score < 90 && result.suggestions.length > 0 && (
+              <div className="suggestions">
+                <h4>Suggested Keywords to Improve Your Score</h4>
+                <ul>
+                  {result.suggestions.map((word, index) => (
+                    <li key={index}>✅ {word}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
       </div>
