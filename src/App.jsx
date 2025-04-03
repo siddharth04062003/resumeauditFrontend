@@ -67,7 +67,7 @@ const App = () => {
 
     try {
       // Send POST request to backend API
-      const response = await fetch('https://resumeaudit-backend.onrender.com/api/resumes/process', {
+      const response = await fetch('https://resumeaudit-backend-wkep.vercel.app/api/resumes/process', {
         method: 'POST',
         body: formData,
       });
